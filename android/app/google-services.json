@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "158649012456",
+    "project_id": "wanderwise-86418",
+    "storage_bucket": "wanderwise-86418.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:158649012456:android:421cc602323a9f282db95d",
+        "android_client_info": {
+          "package_name": "com.wanderwise.wanderwise"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyApu21M_E28f3pL-VcBikzfPgTww-orOUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
