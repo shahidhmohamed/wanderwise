@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Place {
   final String businessStatus;
   final double lat;
@@ -69,6 +71,44 @@ class Place {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'business_status': businessStatus,
+      'geometry': {
+        'location': {
+          'lat': lat,
+          'lng': lng,
+        },
+        'viewport': {
+          'northeast': {
+            'lat': viewportNortheastLat,
+            'lng': viewportNortheastLng,
+          },
+          'southwest': {
+            'lat': viewportSouthwestLat,
+            'lng': viewportSouthwestLng,
+          },
+        },
+      },
+      'icon': icon,
+      'icon_background_color': iconBackgroundColor,
+      'icon_mask_base_uri': iconMaskBaseUri,
+      'name': name,
+      'place_id': placeId,
+      'rating': rating,
+      'reference': reference,
+      'scope': scope,
+      'types': types,
+      'user_ratings_total': userRatingsTotal,
+      'vicinity': vicinity,
+      'photos': photos.isNotEmpty
+          ? photos.map((photo) => photo.toJson()).toList()
+          : [],
+    };
+  }
+
+
+
   @override
   String toString() {
     return 'Place(name: $name, rating: $rating)';
@@ -97,5 +137,14 @@ class Photo {
       photoReference: json['photo_reference'] ?? '',
       width: json['width'] ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'height': height,
+      'html_attributions': htmlAttributions,
+      'photo_reference': photoReference,
+      'width': width,
+    };
   }
 }

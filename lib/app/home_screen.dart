@@ -1,17 +1,16 @@
 import 'package:crystal_navigation_bar/crystal_navigation_bar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:iconly/iconly.dart';
-import 'package:wanderwise/app/explore/explore_page.dart';
-import 'package:wanderwise/app/explore/itinerary_screen.dart';
 import 'package:wanderwise/app/explore/plan_trip.dart';
-import 'package:wanderwise/app/explore/trip_input_screen.dart';
 import 'package:wanderwise/app/favorite/favorite_screen.dart';
 import 'package:wanderwise/app/home/home_page.dart';
-import 'package:wanderwise/app/profile/profile_page.dart';
+import 'package:wanderwise/app/saved/saved_itinerary_screen.dart';
+import 'package:wanderwise/app/settings/settings_page.dart';
 import 'package:wanderwise/initial/login_page.dart';
+import '../controllers/theme_controller.dart';
 
 class HomeScreen extends StatefulWidget {
   HomeScreen({super.key});
@@ -24,10 +23,13 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
+    PlanTrip(),
     HomePage(),
     FavoriteScreen(),
-    TripInputScreen(),
-    PlanTrip()
+    SavedItineraryScreen(),
+    SettingsPage()
+    // TripInputScreen(),
+
   ];
 
 
@@ -45,8 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeController themeController = Get.find();
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: themeController.isDarkMode.value ? Colors.black : Colors.white,
       extendBody: true,
       body: _screens[_selectedIndex],  // Display the selected screen here
 
@@ -61,8 +64,15 @@ class _HomeScreenState extends State<HomeScreen> {
           items: [
             /// Home
             CrystalNavigationBarItem(
-              icon: IconlyBold.home,
-              unselectedIcon: IconlyLight.home,
+            icon: FontAwesomeIcons.plane,
+              unselectedIcon: FontAwesomeIcons.planeUp,
+              selectedColor: Colors.white,
+            ),
+
+            /// Add
+            CrystalNavigationBarItem(
+              icon: FontAwesomeIcons.searchengin,
+              unselectedIcon: FontAwesomeIcons.searchLocation,
               selectedColor: Colors.white,
             ),
 
@@ -73,30 +83,24 @@ class _HomeScreenState extends State<HomeScreen> {
               selectedColor: Colors.red,
             ),
 
-            /// Add
+            /// Saved
             CrystalNavigationBarItem(
-              icon: IconlyBold.plus,
-              unselectedIcon: IconlyLight.plus,
-              selectedColor: Colors.white,
+              icon: FontAwesomeIcons.solidSave,
+              unselectedIcon: FontAwesomeIcons.save,
+              selectedColor: Colors.red,
             ),
 
             /// Search
             CrystalNavigationBarItem(
-              icon: IconlyBold.search,
-              unselectedIcon: IconlyLight.search,
+              icon: IconlyBold.setting,
+              unselectedIcon: IconlyLight.setting,
               selectedColor: Colors.white,
             ),
 
-            /// Profile (Example of a Profile page)
-            CrystalNavigationBarItem(
-              icon: IconlyBold.user_2,
-              unselectedIcon: IconlyLight.user,
-              selectedColor: Colors.white,
-            ),
           ],
         ),
       ),
-      // Sign-out button (can be added in the top or profile tab for logout)
+      // Sign-out button (can be added in the top or settings tab for logout)
       // floatingActionButton: FloatingActionButton(
       //   onPressed: _signOut,
       //   child: Icon(Icons.logout),

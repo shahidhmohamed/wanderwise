@@ -23,7 +23,7 @@ class DotBar extends StatelessWidget {
           child: Icon(
             index < filledDots ? Icons.circle : Icons.circle_outlined,
             size: 28.0,
-            color: index < filledDots ? Colors.green : Colors.grey,
+            color: index < filledDots ? Colors.red : Colors.grey,
           ),
         );
       }),

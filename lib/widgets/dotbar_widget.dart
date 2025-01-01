@@ -5,10 +5,10 @@ class DotBar extends StatelessWidget {
   final int totalDots;  // Total number of dots (usually 5)
 
   const DotBar({
-    Key? key,
+    super.key,
     required this.rating,
     this.totalDots = 5,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

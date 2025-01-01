@@ -1,14 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:wanderwise/global/common/toast.dart';
 import 'package:wanderwise/initial/sign_up_page.dart';
 import 'package:wanderwise/widgets/form_container_widget.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
 import '../../firebase_auth_implementation/firebase_auth_services.dart';
 import '../app/home_screen.dart';
 
@@ -23,8 +20,8 @@ class _LoginPageState extends State<LoginPage> {
   bool _isSigning = false;
   final FirebaseAuthService _auth = FirebaseAuthService();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  TextEditingController _emailController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   @override
   void dispose() {
