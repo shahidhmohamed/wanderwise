@@ -1,136 +1,236 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
+import '../models/place.dart';
+
 class DatabaseHelper {
+  // Singleton pattern for DatabaseHelper
+  static final DatabaseHelper _instance = DatabaseHelper._internal();
+  factory DatabaseHelper() => _instance;
+
+  // Database instance
   static Database? _database;
+
+  // Private constructor
+  DatabaseHelper._internal();
 
   // Get the database
   Future<Database> get database async {
     if (_database != null) return _database!;
 
-    // Create a new database if one does not exist
-    _database = await _initDB();
+    _database = await _initDatabase();
     return _database!;
   }
 
-  // Initialize the database
-  Future<Database> _initDB() async {
-    String path = join(await getDatabasesPath(), 'places_itinerary.db');
+  Future<Database> _initDatabase() async {
+    String path = join(await getDatabasesPath(), 'trips.db');
     return await openDatabase(path, version: 1, onCreate: _onCreate);
   }
 
-  // Create tables
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE trips (
-        id INTEGER PRIMARY KEY,
-        name TEXT
-      );
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        trip_name TEXT,
+        itinerary TEXT
+      )
     ''');
 
     await db.execute('''
-      CREATE TABLE places (
-        id INTEGER PRIMARY KEY,
+      CREATE TABLE fav_place (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        businessStatus TEXT,
+        lat REAL,
+        lng REAL,
+        viewportNortheastLat REAL,
+        viewportNortheastLng REAL,
+        viewportSouthwestLat REAL,
+        viewportSouthwestLng REAL,
+        icon TEXT,
+        iconBackgroundColor TEXT,
+        iconMaskBaseUri TEXT,
         name TEXT,
-        rating REAL
-      );
-    ''');
-
-    await db.execute('''
-      CREATE TABLE itinerary (
-        id INTEGER PRIMARY KEY,
-        trip_id INTEGER,  -- Foreign key reference to the trips table
-        day TEXT,
-        FOREIGN KEY(trip_id) REFERENCES trips(id)
-      );
-    ''');
-
-    await db.execute('''
-      CREATE TABLE trip_activities (
-        id INTEGER PRIMARY KEY,
-        itinerary_id INTEGER,  -- Foreign key to itinerary
-        place_id INTEGER,  -- Foreign key to places
-        FOREIGN KEY(itinerary_id) REFERENCES itinerary(id),
-        FOREIGN KEY(place_id) REFERENCES places(id)
-      );
+        placeId TEXT,
+        rating REAL,
+        reference TEXT,
+        scope TEXT,
+        types TEXT,
+        userRatingsTotal INTEGER,
+        vicinity TEXT,
+        photos TEXT
+      )
     ''');
   }
 
-  // Insert trip data into the database
-  Future<int> _insertTrip(String tripName, Database db) async {
-    return await db.insert(
-      'trips',
-      {'name': tripName},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  // Insert place data into the database
-  Future<int> _insertPlace(Map<String, dynamic> place, Database db) async {
-    return await db.insert(
-      'places',
-      place,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  // Insert itinerary data into the database
-  Future<int> _insertItinerary(int tripId, String day, Database db) async {
-    return await db.insert(
-      'itinerary',
-      {'trip_id': tripId, 'day': day},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  Future<void> _insertTripActivity(int itineraryId, int placeId, Database db) async {
-    await db.insert(
-      'trip_activities',
-      {'itinerary_id': itineraryId, 'place_id': placeId},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-// Save a full trip with places and itinerary
-  Future<void> saveTrip(String tripName, List<Map<String, dynamic>> places, List<Map<String, dynamic>> itinerary) async {
+  Future<void> addFavPlace(
+      String businessStatus,
+      double lat,
+      double lng,
+      double viewportNortheastLat,
+      double viewportNortheastLng,
+      double viewportSouthwestLat,
+      double viewportSouthwestLng,
+      String icon,
+      String iconBackgroundColor,
+      String iconMaskBaseUri,
+      String name,
+      String placeId,
+      double rating,
+      String reference,
+      String scope,
+      List<String> types,
+      int userRatingsTotal,
+      String vicinity,
+      List<String> photos,
+      ) async {
     final db = await database;
 
-    // 1. Insert the trip record
-    int tripId = await _insertTrip(tripName, db);
+    Map<String, dynamic> favPlaceData = {
+      'businessStatus': businessStatus,
+      'lat': lat,
+      'lng': lng,
+      'viewportNortheastLat': viewportNortheastLat,
+      'viewportNortheastLng': viewportNortheastLng,
+      'viewportSouthwestLat': viewportSouthwestLat,
+      'viewportSouthwestLng': viewportSouthwestLng,
+      'icon': icon,
+      'iconBackgroundColor': iconBackgroundColor,
+      'iconMaskBaseUri': iconMaskBaseUri,
+      'name': name,
+      'placeId': placeId,
+      'rating': rating,
+      'reference': reference,
+      'scope': scope,
+      'types': types.join(','), // Convert list to a comma-separated string
+      'userRatingsTotal': userRatingsTotal,
+      'vicinity': vicinity,
+      'photos': photos.join(','), // Convert list to a comma-separated string
+    };
 
-    // 2. Insert places into the database and collect place IDs
-    List<int> placeIds = [];
-    for (var place in places) {
-      int placeId = await _insertPlace(place, db);
-      placeIds.add(placeId);
-    }
+    await db.insert(
+      'fav_place',
+      favPlaceData,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
 
-    // 3. Insert itinerary days and link them to the trip
-    for (var day in itinerary) {
-      int itineraryId = await _insertItinerary(tripId, day['day'], db);
+  Future<List<Map<String,dynamic>>> getFavPlace() async {
+    final db = await database;
+    return await db.query('fav_place');
+  }
 
-      // 4. Link places to the itinerary days by matching activity names to place names
-      List<String> activities = day['activities'];  // List of activity names
-      for (var activity in activities) {
-        // Find the corresponding placeId by matching name with the places list
-        int placeId = places.indexWhere((place) => place['name'] == activity); // Find place by name
+  Future<void> deleteFav(int id) async {
+    final db = await database;
+    await db.delete('fav_place', where: 'id = ?', whereArgs: [id]);
+  }
 
-        if (placeId != -1) {
-          await _insertTripActivity(itineraryId, placeId, db);  // Link place to day
-        } else {
-          print('Place for activity "$activity" not found.');
-        }
-      }
-    }
+  Future<void> deleteTrip(int id) async {
+    final db = await database;
+    await db.delete('trips', where: 'id = ?', whereArgs: [id]);
+  }
 
-    print("Trip saved successfully!");
+  // Update an article in the 'news' table
+  Future<int> updateFav(int id, Map<String, dynamic> updatedValues) async {
+    final db = await database;
+    return await db.update(
+      'fav_place',
+      updatedValues,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updateTrip(int id, Map<String, dynamic> updatedValues) async {
+    final db = await database;
+    return await db.update(
+      'trips',
+      updatedValues,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    print("Executing SQL update for trip ID: $id");
+
+    // Map<String, dynamic> updatedTrip = {
+    //   'trip_name': updatedValues['trip_name'],
+    //   'itinerary': updatedValues['itinerary'],
+    // };
+    //
+    // int result = await db.update(
+    //   'trips',
+    //   updatedTrip,
+    //   where: 'id = ?',
+    //   whereArgs: [id],
+    // );
+
+    // print("SQL Update result: $result");
+    // return result;
+  }
+
+  // Save a trip to the database
+  Future<void> saveTrip(String tripName, String itinerary) async {
+    final db = await database;
+
+    Map<String, dynamic> tripData = {
+      'trip_name': tripName,
+      'itinerary': itinerary,
+    };
+
+    print("Trip Data${tripData}");
+
+    await db.insert(
+      'trips',
+      tripData,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<List<Map<String, dynamic>>> getSavedTrips() async {
-    final db = await database; // Get a reference to your database (assuming it's initialized)
-
-    // Query your database for all saved trips
-    final List<Map<String, dynamic>> trips = await db.query('trips'); // Assuming 'trips' is the table name
-    return trips;
+    final db = await database;
+    return await db.query('trips');
   }
+
+  // Get all trips from the database
+  Future<List<Map<String, dynamic>>> getTrips() async {
+    final db = await database;
+    return await db.query('trips');
+  }
+
+  // Get a single trip by id
+  Future<Map<String, dynamic>?> getTripById(int id) async {
+    final db = await database;
+    List<Map<String, dynamic>> result = await db.query(
+      'trips',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    return result.isNotEmpty ? result.first : null;
+  }
+
+  // Update a trip by id
+  // Future<int> updateTrip(int id, Map<String, String> updatedValues) async {
+  //   final db = await database;
+  //
+  //   Map<String, dynamic> updatedTrip = {
+  //     'trip_name': tripName,
+  //     'itinerary': itinerary,
+  //   };
+  //
+  //   return await db.update(
+  //     'trips',
+  //     updatedTrip,
+  //     where: 'id = ?',
+  //     whereArgs: [id],
+  //   );
+  // }
+
+  // Delete a trip by id
+  // Future<int> deleteTrip(int id) async {
+  //   final db = await database;
+  //   return await db.delete(
+  //     'trips',
+  //     where: 'id = ?',
+  //     whereArgs: [id],
+  //   );
+  // }
 }

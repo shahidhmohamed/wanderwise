@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:wanderwise/models/place.dart'; // Import the Place model
 
 class ViewPlacePage extends StatelessWidget {
   final Place article;
-  final String dayInfo;  // Added to accept dayInfo
+  final String dayInfo; // Added to accept dayInfo
 
-  const ViewPlacePage({required this.article, required this.dayInfo, Key? key}) : super(key: key);
+  const ViewPlacePage({required this.article, required this.dayInfo, Key? key})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +80,80 @@ class ViewPlacePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.grey.shade900,
+                      Colors.grey.shade300,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    const BoxShadow(
+                      color: Colors.black26,
+                      offset: Offset(0, 4),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Types: ${article.types.join(', ').toUpperCase()}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      Text(
+                        article.vicinity.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      Text(
+                        'Total Rating: ${article.userRatingsTotal.toString()}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        "Lat: ${article.lat.toString()}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        "Lng: ${article.lng.toString()}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             ],
           ),
         ),

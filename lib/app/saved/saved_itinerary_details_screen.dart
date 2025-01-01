@@ -1,117 +1,173 @@
 import 'package:flutter/material.dart';
-import '../../db_helper/db_helper.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:wanderwise/app/saved/update_trip_page.dart';
+
+import '../../controllers/theme_controller.dart';
 
 class SavedItineraryDetailsScreen extends StatefulWidget {
-  final int tripId; // Pass the tripId from the previous page
+  final String itinerary;
+  final int tripID;
+  final String tripName;
 
-  SavedItineraryDetailsScreen({required this.tripId}); // Constructor to receive the tripId
+  SavedItineraryDetailsScreen({required this.itinerary, required this.tripID, required this.tripName});
 
   @override
   _SavedItineraryDetailsScreenState createState() => _SavedItineraryDetailsScreenState();
 }
 
-class _SavedItineraryDetailsScreenState extends State<SavedItineraryDetailsScreen> {
-  late Future<Map<String, dynamic>> _tripDetailsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    // Fetch the trip details when the page is loaded
-    _tripDetailsFuture = _fetchTripDetails(widget.tripId);
-  }
-
-  // Method to fetch the detailed trip data from the database
-  Future<Map<String, dynamic>> _fetchTripDetails(int tripId) async {
-    final db = await DatabaseHelper().database;
-
-    // Fetch the basic trip info (name)
-    final tripResult = await db.query('trips', where: 'id = ?', whereArgs: [tripId]);
-    final trip = tripResult.first;
-
-    // Fetch the itinerary (days) for the trip
-    final itineraryResult = await db.query('itinerary', where: 'trip_id = ?', whereArgs: [tripId]);
-
-    // Fetch the places and activities related to the trip's itinerary
-    final tripActivitiesResult = await db.rawQuery('''
-      SELECT places.name AS place_name, itinerary.day, places.rating
-      FROM trip_activities
-      JOIN places ON trip_activities.place_id = places.id
-      JOIN itinerary ON trip_activities.itinerary_id = itinerary.id
-      WHERE itinerary.trip_id = ?
-    ''', [tripId]);
-
-    return {
-      'trip': trip,
-      'itinerary': itineraryResult,
-      'activities': tripActivitiesResult,
-    };
-  }
-
+class _SavedItineraryDetailsScreenState extends State<SavedItineraryDetailsScreen> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
+    final ThemeController themeController = Get.find();
+    List<String> days = widget.itinerary.split('Day');
+    days.removeAt(0);
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Trip Details"),
-        backgroundColor: Colors.black,
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _tripDetailsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator()); // Show a loading indicator while fetching data
-          }
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: ListView.builder(
+          itemCount: days.length,
+          itemBuilder: (context, index) {
+            final dayContent = days[index].trim();
+            List<String> parts = dayContent.split('Suggested Activities:');
+            String budgetLine = parts[0].trim();
+            String activitiesContent = parts.length > 1 ? parts[1].trim() : '';
 
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}')); // Show error if any
-          }
+            RegExp budgetRegExp = RegExp(r'Spend up to \$(\d+(\.\d{1,2})?)');
+            String? budget = budgetRegExp.firstMatch(budgetLine)?.group(0);
 
-          if (!snapshot.hasData || snapshot.data!['trip'] == null) {
-            return Center(child: Text('No data found.'));
-          }
+            List<String> activities = activitiesContent.split(', ');
 
-          final trip = snapshot.data!['trip'];
-          final itinerary = snapshot.data!['itinerary'];
-          final activities = snapshot.data!['activities'];
-
-          return SingleChildScrollView(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  trip['name'],
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            return GestureDetector(
+              onTap: () async {
+                final int id = index;
+                final updated = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UpdateTripPage(
+                      dayID: id,
+                      tripName: widget.tripName,
+                      id: widget.tripID,
+                      budget: budget ?? 'No budget info available',
+                      activities: activities,
+                    ),
+                  ),
+                );
+                if (updated == true) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'Trip Updated',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                      backgroundColor: Colors.green,
+                      duration: const Duration(seconds: 3),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 10.0),
+                    ),
+                  );
+                  Navigator.pop(context, true);
+                  setState(() {});
+                }
+              },
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                margin: EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade900, Colors.blue.shade300],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      offset: Offset(0, 4),
+                      blurRadius: 10,
+                    ),
+                  ],
                 ),
-                SizedBox(height: 16),
-                Text(
-                  'Itinerary:',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                ...itinerary.map<Widget>((day) {
-                  return ListTile(
-                    title: Text('Day: ${day['day']}'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Activities:'),
-                        ...activities.where((activity) =>
-                        activity['day'] == day['day']).map<Widget>((activity) {
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'DAY ${index + 1}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Icon(FontAwesomeIcons.edit, color: Colors.white),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        budget ?? 'No budget info available',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.yellowAccent,
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: activities.map((activity) {
+                          List<String> activityParts = activity.split('(Rating: ');
+                          String activityName = activityParts[0].trim();
+                          String rating = activityParts.length > 1
+                              ? activityParts[1].replaceAll(')', '').trim()
+                              : 'N/A';
+
                           return Padding(
-                            padding: const EdgeInsets.only(left: 16.0),
-                            child: Text(
-                              '${activity['place_name']} - Rating: ${activity['rating']}',
-                              style: TextStyle(fontSize: 16),
+                            padding: EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(FontAwesomeIcons.plane, size: 16, color: Colors.yellow),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '$activityName (Rating: $rating)',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           );
                         }).toList(),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ],
-            ),
-          );
-        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

@@ -54,6 +54,7 @@ dependencies:
   hexcolor: ^3.0.1
   get_storage: ^2.1.1
   sqflite: ^2.4.1
+  share_plus: ^10.1.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -77,6 +78,7 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
+    - assets/bg/login-bg-2.jpg
     - assets/logos/
     - assets/jsons/
     - assets/bg/

@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _screens = [
     PlanTrip(),
     HomePage(),
-    FavoriteScreen(),
+    FavoritesScreen(),
     SavedItineraryScreen(),
     SettingsPage()
     // TripInputScreen(),

@@ -6,9 +6,11 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:wanderwise/controllers/places_controller.dart';
 import 'package:wanderwise/models/place.dart';
 
+import '../../db_helper/db_helper.dart';
 import '../../widgets/dotbar_widget.dart';
 import '../explore/view_details.dart';
 
@@ -22,6 +24,7 @@ class HomePage extends StatefulWidget {
 typedef MenuEntry = DropdownMenuEntry<String>;
 
 class _HomePageState extends State<HomePage> {
+  bool _isLoading = false;
   LatLng myCurrentLocation = const LatLng(7.8731, 80.7718);
   late GoogleMapController googleMapController;
   Set<Marker> markers = {};
@@ -68,6 +71,435 @@ class _HomePageState extends State<HomePage> {
 
     // Initialize with sample data
     _loadSampleData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isPortrait = screenHeight > screenWidth;
+
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.black,
+              Colors.black,
+              Color(0xFF1A1A2E),
+              Colors.white,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0.4, 0.4, 0.7, 8],
+          ),
+        ),
+        child: Column(
+          children: [
+            // Google Map Widget
+            ClipRRect(
+              borderRadius:
+                  BorderRadius.circular(15), // Apply border radius here
+              child: SizedBox(
+                height: isPortrait ? screenHeight * 0.4 : screenHeight * 0.5,
+                child: GoogleMap(
+                  myLocationButtonEnabled: false,
+                  markers: markers,
+                  polylines: polylines,
+                  onMapCreated: (GoogleMapController controller) {
+                    googleMapController = controller;
+                  },
+                  initialCameraPosition: CameraPosition(
+                    target: myCurrentLocation,
+                    zoom: 14,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Dropdown Menu Button
+                Container(
+                  width: screenWidth * 0.3,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Color(0xFA1A1A3F),
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(color: Color(0xFA1A1A3F), width: 1),
+                  ),
+                  child: Center(
+                    child: DropdownButton<String>(
+                      value: selectedDropdownValue,
+                      items: list
+                          .map<DropdownMenuItem<String>>(
+                            (String value) => DropdownMenuItem<String>(
+                                value: value,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 8.0, horizontal: 16.0),
+                                  child: Center(
+                                    child: Text(
+                                      categoryLabels[value]!.toUpperCase(),
+                                      style: TextStyle(
+                                          fontSize: 10, color: Colors.white),
+                                    ),
+                                  ),
+                                )),
+                          )
+                          .toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedDropdownValue = newValue!;
+                        });
+                      },
+                      dropdownColor: Color(0xFA1A1A3F),
+                      underline: SizedBox(),
+                      isExpanded: true,
+                    ),
+                  ),
+                ),
+
+                // Find Nearby Button
+                GestureDetector(
+                  onTap: () async {
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    Position position = await currentPosition();
+                    setState(() {
+                      myCurrentLocation =
+                          LatLng(position.latitude, position.longitude);
+                    });
+
+                    googleMapController.animateCamera(
+                      CameraUpdate.newCameraPosition(
+                        CameraPosition(
+                          target: LatLng(position.latitude, position.longitude),
+                          zoom: 14,
+                        ),
+                      ),
+                    );
+
+                    // Fetch nearby places
+                    List<Place> places =
+                        await placesController.fetchNearbyPlaces(
+                            position.latitude,
+                            position.longitude,
+                            selectedDropdownValue);
+                    setState(() {
+                      nearbyPlaces = places;
+                      markers.clear();
+                      _isLoading = false;
+                      for (var place in places) {
+                        markers.add(
+                          Marker(
+                            markerId: MarkerId(place.placeId),
+                            position: LatLng(place.lat, place.lng),
+                            infoWindow: InfoWindow(title: place.name),
+                            onTap: () {
+                              _onPlaceSelected(place);
+                            },
+                          ),
+                        );
+                      }
+                    });
+                  },
+                  child: Container(
+                    width: screenWidth * 0.6,
+                    height: 45,
+                    decoration: BoxDecoration(
+                      color: Color(0xFA1A1A3F),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(FontAwesomeIcons.searchengin,
+                              color: Colors.white),
+                          SizedBox(width: 5),
+                          Center(
+                            child: _isLoading ? CircularProgressIndicator(color: Colors.white,) : Text(
+                              "FIND NEAR ${categoryLabels[selectedDropdownValue]?.toUpperCase() ?? selectedDropdownValue.toUpperCase()}",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: 15),
+
+            // Nearby places list
+            SizedBox(
+              height: 364,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: nearbyPlaces.length,
+                itemBuilder: (context, index) {
+                  final place = nearbyPlaces[index];
+                  final dayInfo = '';
+
+                  String? photoUrl;
+                  if (place.photos != null && place.photos!.isNotEmpty) {
+                    String photoReference = place.photos![0].photoReference;
+                    photoUrl =
+                        'https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=$photoReference&key=$apiKey';
+                  }
+
+                  return Container(
+                    width: screenWidth * 0.7,
+                    margin: EdgeInsets.symmetric(horizontal: 10.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        // Navigate to the ViewPlacePage when the stack is tapped
+                        Get.to(
+                          () => ViewPlacePage(article: place, dayInfo: dayInfo),
+                          transition: Transition.leftToRight,
+                          curve: Curves.easeInCirc,
+                          duration: Duration(microseconds: 1000),
+                        );
+                      },
+                      child: Stack(
+                        children: [
+                          // Background Image
+                          Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: ClipRRect(
+                              borderRadius:
+                                  const BorderRadius.all(Radius.circular(18)),
+                              child: photoUrl != null
+                                  ? Image.network(
+                                      photoUrl,
+                                      height: 150,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.network(
+                                      place.icon,
+                                      height: 100,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
+                            ),
+                          ),
+
+                          // Download button at the top right
+                          Positioned(
+                            top: 22,
+                            right: 22,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.transparent,
+                                shape: BoxShape.circle,
+                              ),
+                              child: IconButton(
+                                icon: const Icon(
+                                  FontAwesomeIcons.heart,
+                                  color: Colors.white,
+                                  size: 34,
+                                ),
+                                onPressed: () async {
+                                  try {
+                                    final dbHelper = DatabaseHelper();
+                                    await dbHelper.addFavPlace(
+                                      place.businessStatus,
+                                      place.lat,
+                                      place.lng,
+                                      place.viewportNortheastLat,
+                                      place.viewportNortheastLng,
+                                      place.viewportSouthwestLat,
+                                      place.viewportSouthwestLng,
+                                      place.icon,
+                                      place.iconBackgroundColor,
+                                      place.iconMaskBaseUri,
+                                      place.name,
+                                      place.placeId,
+                                      place.rating,
+                                      place.reference,
+                                      place.scope,
+                                      place.types,
+                                      place.userRatingsTotal,
+                                      place.vicinity,
+                                      place.photos
+                                          .map((photo) => photo.photoReference)
+                                          .toList(),
+                                    );
+
+                                    // Show success message
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: const Text(
+                                            'Favorite place added successfully!',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.green,
+                                          duration: const Duration(seconds: 3),
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                                        )
+                                    );
+                                  } catch (e) {
+                                    // Optionally handle errors
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Failed to add favorite place: $e'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+
+                          // Details at the bottom
+                          Positioned(
+                            bottom: 138,
+                            left: 18,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Name of the place
+                                Text(
+                                  place.name.toUpperCase(),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+
+                                // Rating and review count
+                                Row(
+                                  children: [
+                                    DotBar(rating: place.rating),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      place.userRatingsTotal.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 16,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Share button at the bottom right
+                          Positioned(
+                            bottom: 118,
+                            right: 18,
+                            child: IconButton(
+                              icon: Icon(CupertinoIcons.share,
+                                  color: Colors.white, size: 40.0),
+                              onPressed: () {
+                                final placeName = place.name ?? 'Unknown Place';
+                                final userRatings = place.userRatingsTotal?.toString() ?? 'No ratings';
+                                final placeUrl = place.vicinity ?? 'No URL available';
+
+                                if (placeUrl == 'No URL available') {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('No URL available to share!'),
+                                      duration: Duration(seconds: 2),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                Share.share(
+                                  'Check out this place: "$placeName"\nRatings: $userRatings\n\nExplore more here: $placeUrl',
+                                  subject: 'Check out this place!',
+                                );
+                              },
+
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Handle place selection to show directions
+  void _onPlaceSelected(Place place) async {
+    final directions = await placesController.fetchDirections(
+        myCurrentLocation.latitude,
+        myCurrentLocation.longitude,
+        place.lat,
+        place.lng);
+    _addPolyline(directions);
+    print("Selected Place ${place.lat} ${place.lng}");
+    print(
+        "My Current Location ${myCurrentLocation.latitude} ${myCurrentLocation.longitude}");
+  }
+
+  // Add polyline on map for the directions
+  void _addPolyline(List<LatLng> points) {
+    polylines.clear();
+    polylines.add(Polyline(
+      polylineId: PolylineId('route'),
+      points: points,
+      color: Colors.blue,
+      width: 5,
+    ));
+    setState(() {});
+  }
+
+  // Get current location of the user
+  Future<Position> currentPosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return Future.error('Location services are disabled');
+    }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return Future.error("Location permission denied");
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      return Future.error('Location permissions are permanently denied');
+    }
+    return await Geolocator.getCurrentPosition();
   }
 
   // Sample data (mock data)
@@ -317,356 +749,5 @@ class _HomePageState extends State<HomePage> {
         );
       }
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final isPortrait = screenHeight > screenWidth;
-
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.black,
-              Colors.black,
-              Color(0xFF1A1A2E),
-              Colors.white,
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            stops: [0.4, 0.4, 0.7, 8],
-          ),
-        ),
-        child: Column(
-          children: [
-            // Google Map Widget
-            ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(15), // Apply border radius here
-              child: SizedBox(
-                height: isPortrait ? screenHeight * 0.4 : screenHeight * 0.5,
-                child: GoogleMap(
-                  myLocationButtonEnabled: false,
-                  markers: markers,
-                  polylines: polylines,
-                  onMapCreated: (GoogleMapController controller) {
-                    googleMapController = controller;
-                  },
-                  initialCameraPosition: CameraPosition(
-                    target: myCurrentLocation,
-                    zoom: 14,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Dropdown Menu Button
-                Container(
-                  width: screenWidth * 0.3,
-                  height: 45,
-                  decoration: BoxDecoration(
-                    color: Color(0xFA1A1A3F),
-                    borderRadius: BorderRadius.circular(13),
-                    border: Border.all(color: Color(0xFA1A1A3F), width: 1),
-                  ),
-                  child: Center(
-                    child: DropdownButton<String>(
-                      value: selectedDropdownValue,
-                      items: list
-                          .map<DropdownMenuItem<String>>(
-                            (String value) => DropdownMenuItem<String>(
-                                value: value,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 8.0, horizontal: 16.0),
-                                  child: Center(
-                                    child: Text(
-                                      categoryLabels[value]!.toUpperCase(),
-                                      style: TextStyle(
-                                          fontSize: 10, color: Colors.white),
-                                    ),
-                                  ),
-                                )),
-                          )
-                          .toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          selectedDropdownValue = newValue!;
-                        });
-                      },
-                      dropdownColor: Color(0xFA1A1A3F),
-                      underline: SizedBox(),
-                      isExpanded: true,
-                    ),
-                  ),
-                ),
-
-                // Find Nearby Button
-                GestureDetector(
-                  onTap: () async {
-                    Position position = await currentPosition();
-                    setState(() {
-                      myCurrentLocation =
-                          LatLng(position.latitude, position.longitude);
-                    });
-
-                    googleMapController.animateCamera(
-                      CameraUpdate.newCameraPosition(
-                        CameraPosition(
-                          target: LatLng(position.latitude, position.longitude),
-                          zoom: 14,
-                        ),
-                      ),
-                    );
-
-                    // Fetch nearby places
-                    List<Place> places =
-                        await placesController.fetchNearbyPlaces(
-                            position.latitude,
-                            position.longitude,
-                            selectedDropdownValue);
-                    setState(() {
-                      nearbyPlaces = places;
-                      markers.clear();
-                      for (var place in places) {
-                        markers.add(
-                          Marker(
-                            markerId: MarkerId(place.placeId),
-                            position: LatLng(place.lat, place.lng),
-                            infoWindow: InfoWindow(title: place.name),
-                            onTap: () {
-                              _onPlaceSelected(place);
-                            },
-                          ),
-                        );
-                      }
-                    });
-                  },
-                  child: Container(
-                    width: screenWidth * 0.6,
-                    height: 45,
-                    decoration: BoxDecoration(
-                      color: Color(0xFA1A1A3F),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(FontAwesomeIcons.searchengin,
-                              color: Colors.white),
-                          SizedBox(width: 5),
-                          Center(
-                            child: Text(
-                              "FIND NEAR ${categoryLabels[selectedDropdownValue]?.toUpperCase() ?? selectedDropdownValue.toUpperCase()}",
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            SizedBox(height: 15),
-
-            // Nearby places list
-            SizedBox(
-              height: 364,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: nearbyPlaces.length,
-                itemBuilder: (context, index) {
-                  final place = nearbyPlaces[index];
-                  final dayInfo = '';
-
-                  String? photoUrl;
-                  if (place.photos != null && place.photos!.isNotEmpty) {
-                    String photoReference = place.photos![0].photoReference;
-                    photoUrl =
-                    'https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=$photoReference&key=$apiKey';
-                  }
-
-                  return Container(
-                    width: screenWidth * 0.7,
-                    margin: EdgeInsets.symmetric(horizontal: 10.0),
-                    child: GestureDetector(
-                      onTap: () {
-                        // Navigate to the ViewPlacePage when the stack is tapped
-                        Get.to(
-                              () => ViewPlacePage(article: place, dayInfo: dayInfo),
-                          transition: Transition.leftToRight,
-                          curve: Curves.easeInCirc,
-                          duration: Duration(microseconds: 1000),
-                        );
-                      },
-                      child: Stack(
-                        children: [
-                          // Background Image
-                          Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.all(Radius.circular(18)),
-                              child: photoUrl != null
-                                  ? Image.network(
-                                photoUrl,
-                                height: 150,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              )
-                                  : Image.network(
-                                place.icon,
-                                height: 100,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-
-                          // Download button at the top right
-                          Positioned(
-                            top: 22,
-                            right: 22,
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                color: Colors.transparent,
-                                shape: BoxShape.circle,
-                              ),
-                              child: IconButton(
-                                icon: const Icon(
-                                  FontAwesomeIcons.heart,
-                                  color: Colors.white,
-                                  size: 34,
-                                ),
-                                onPressed: () {
-                                  // Implement save functionality if needed
-                                },
-                              ),
-                            ),
-                          ),
-
-                          // Details at the bottom
-                          Positioned(
-                            bottom: 138,
-                            left: 18,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Name of the place
-                                Text(
-                                  place.name.toUpperCase(),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-
-                                // Rating and review count
-                                Row(
-                                  children: [
-                                    DotBar(rating: place.rating),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      place.userRatingsTotal.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 16,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Share button at the bottom right
-                          Positioned(
-                            bottom: 118,
-                            right: 18,
-                            child: IconButton(
-                              icon: Icon(CupertinoIcons.share,
-                                  color: Colors.white, size: 40.0),
-                              onPressed: () {
-                                // Implement share functionality if needed
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Handle place selection to show directions
-  void _onPlaceSelected(Place place) async {
-    final directions = await placesController.fetchDirections(
-        myCurrentLocation.latitude,
-        myCurrentLocation.longitude,
-        place.lat,
-        place.lng);
-    _addPolyline(directions);
-    print("Selected Place ${place.lat} ${place.lng}");
-    print(
-        "My Current Location ${myCurrentLocation.latitude} ${myCurrentLocation.longitude}");
-  }
-
-  // Add polyline on map for the directions
-  void _addPolyline(List<LatLng> points) {
-    polylines.clear();
-    polylines.add(Polyline(
-      polylineId: PolylineId('route'),
-      points: points,
-      color: Colors.blue,
-      width: 5,
-    ));
-    setState(() {});
-  }
-
-  // Get current location of the user
-  Future<Position> currentPosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return Future.error('Location services are disabled');
-    }
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error("Location permission denied");
-      }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error('Location permissions are permanently denied');
-    }
-    return await Geolocator.getCurrentPosition();
   }
 }
