@@ -10,7 +10,8 @@ class PlacesController {
   PlacesController({required this.apiKey});
 
   // Fetching nearby places from the Google Places API
-  Future<List<Place>> fetchNearbyPlaces(double latitude, double longitude , String type) async {
+  Future<List<Place>> fetchNearbyPlaces(
+      double latitude, double longitude, String type) async {
     final String url =
         'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=$latitude,$longitude&radius=1000&type=$type&key=$apiKey';
 
@@ -28,8 +29,8 @@ class PlacesController {
     }
   }
 
-
-  Future<List<LatLng>> fetchDirections(double startLat, double startLng, double endLat, double endLng) async {
+  Future<List<LatLng>> fetchDirections(
+      double startLat, double startLng, double endLat, double endLng) async {
     final String url =
         'https://maps.googleapis.com/maps/api/directions/json?origin=$startLat,$startLng&destination=$endLat,$endLng&key=$apiKey';
 
@@ -41,7 +42,10 @@ class PlacesController {
       final data = json.decode(response.body);
 
       // Check if the 'routes' and 'legs' are available
-      if (data['routes'] != null && data['routes'].isNotEmpty && data['routes'][0]['legs'] != null && data['routes'][0]['legs'].isNotEmpty) {
+      if (data['routes'] != null &&
+          data['routes'].isNotEmpty &&
+          data['routes'][0]['legs'] != null &&
+          data['routes'][0]['legs'].isNotEmpty) {
         List<LatLng> points = [];
 
         // Iterating through the steps to collect coordinates
@@ -74,10 +78,11 @@ class PlacesController {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return (data['results'] as List).map((place) => Place.fromJson(place)).toList();
+      return (data['results'] as List)
+          .map((place) => Place.fromJson(place))
+          .toList();
     } else {
       throw Exception('Failed to load places');
     }
   }
-
 }

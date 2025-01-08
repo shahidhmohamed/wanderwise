@@ -8,10 +8,8 @@ import 'package:wanderwise/initial/splash_screen.dart';
 import 'controllers/theme_controller.dart';
 
 Future<void> main() async {
-  // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase for web or mobile
   if (kIsWeb) {
     await Firebase.initializeApp(
       options: FirebaseOptions(
@@ -29,10 +27,9 @@ Future<void> main() async {
   runApp(MyApp());
 }
 
-
 class MyApp extends StatelessWidget {
   final ThemeController themeController = Get.put(ThemeController());
-   MyApp({super.key});
+  MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +38,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
-      themeMode: themeController.isDarkMode.value ? ThemeMode.dark : ThemeMode.light,
+      themeMode:
+          themeController.isDarkMode.value ? ThemeMode.dark : ThemeMode.light,
       home: const SplashScreen(),
     );
   }

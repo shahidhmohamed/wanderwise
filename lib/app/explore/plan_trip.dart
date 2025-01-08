@@ -60,7 +60,7 @@ class _PlanTripState extends State<PlanTrip> {
             ),
           ),
         ),
-        elevation: 0, // Remove shadow for a cleaner look
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -68,15 +68,13 @@ class _PlanTripState extends State<PlanTrip> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // GridView that takes as much space as it needs
               SizedBox(
-                height:
-                    350, // Set a fixed height or let it shrink-wrap based on content
+                height: 350,
                 child: GridView.count(
-                  shrinkWrap: true, // GridView will shrink to fit its content
-                  crossAxisCount: 2, // Two boxes per row
-                  mainAxisSpacing: 16, // Space between rows
-                  crossAxisSpacing: 16, // Space between columns
+                  shrinkWrap: true,
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
                   children: [
                     _buildInputBox(
                         _destinationController, _icons[0], 'Enter Country'),
@@ -87,7 +85,6 @@ class _PlanTripState extends State<PlanTrip> {
                   ],
                 ),
               ),
-
               Center(
                 child: Text(
                   "✈️ Ready to Explore? 🌍\nPlan Your Dream Trip Today!",
@@ -99,9 +96,7 @@ class _PlanTripState extends State<PlanTrip> {
                   ),
                 ),
               ),
-
-              // Submit Button below the text with optional spacing
-              SizedBox(height: 46), // You can adjust this value
+              SizedBox(height: 46),
               _buildSubmitButton(),
             ],
           ),
@@ -131,12 +126,11 @@ class _PlanTripState extends State<PlanTrip> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 26.0), // Add space on top
+              padding: const EdgeInsets.only(top: 26.0),
               child: Row(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(
-                        left: 16.0), // Add space on the left for the icon
+                    padding: const EdgeInsets.only(left: 16.0),
                     child: Icon(
                       icon,
                       size: 40,
@@ -223,12 +217,11 @@ class _PlanTripState extends State<PlanTrip> {
     setState(() {
       _isLoading = true;
     });
-    String destination = _destinationController.text; // E.g., "Sri Lanka"
+    String destination = _destinationController.text;
     double budget = double.tryParse(_budgetController.text) ?? 0;
     int days = int.tryParse(_daysController.text) ?? 0;
 
     try {
-      // Fetch places based on the user input
       List<Place> places = await placesController.fetchPlaces(destination);
       print('Fetched Places: $places');
 
@@ -236,7 +229,6 @@ class _PlanTripState extends State<PlanTrip> {
         _isLoading = false;
       });
 
-      // Create a TripPlanner object
       TripPlanner tripPlanner =
           TripPlanner(budget: budget, duration: days, places: places);
       tripPlanner.generateItinerary();

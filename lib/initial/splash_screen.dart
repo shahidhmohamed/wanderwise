@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../app/home_screen.dart';
+import '../app/saved/saved_itinerary_screen.dart';
 import '../util/LottieFiles.dart';
 import 'login_page.dart';
 
@@ -17,28 +20,92 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-
   @override
   void initState() {
     super.initState();
     _checkUserSignInStatus();
   }
 
+  // void _checkUserSignInStatus() async {
+  //   User? user = FirebaseAuth.instance.currentUser;
+  //
+  //   await Future.delayed(Duration(seconds: 3));
+  //
+  //   if (user != null) {
+  //     print("User Found");
+  //
+  //     Get.off(() => HomeScreen(),
+  //         transition: Transition.rightToLeft,
+  //         curve: Curves.easeInCubic,
+  //         duration: const Duration(milliseconds: 1000));
+  //   } else {
+  //     Get.off(() => LoginPage(),
+  //         transition: Transition.rightToLeft,
+  //         curve: Curves.easeInCubic,
+  //         duration: const Duration(milliseconds: 1000));
+  //   }
+  // }
+
+  Future<bool> hasInternetConnection() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult == ConnectivityResult.none) {
+      return false; // No connectivity
+    }
+    try {
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (e) {
+      return false; // Unable to reach the internet
+    }
+  }
+
   void _checkUserSignInStatus() async {
+    // Check for internet connectivity
+    if (!await hasInternetConnection()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'No internet connection. Redirecting to saved trips...',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 16,
+            ),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+        ),
+      );
+
+      Get.off(() => SavedItineraryScreen(),
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 1000));
+      return; // Exit the function after handling offline mode
+    }
+
     // Check if the user is signed in
     User? user = FirebaseAuth.instance.currentUser;
 
-    // Wait for the splash animation to finish, then navigate
-    await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(Duration(seconds: 3)); // Splash screen delay
 
-    // Navigate based on user authentication status
     if (user != null) {
+      // User is signed in
       print("User Found");
-      // If the user is already signed in, go to the HomePage
-      Get.off(() => HomeScreen(), transition: Transition.rightToLeft, curve: Curves.easeInCubic, duration: const Duration(milliseconds: 1000));
+      Get.off(() => HomeScreen(),
+          transition: Transition.rightToLeft,
+          curve: Curves.easeInCubic,
+          duration: const Duration(milliseconds: 1000));
     } else {
-      // If the user is not signed in, go to the SignInPage
-      Get.off(() => LoginPage(), transition: Transition.rightToLeft, curve: Curves.easeInCubic, duration: const Duration(milliseconds: 1000));
+      // No user found
+      Get.off(() => LoginPage(),
+          transition: Transition.rightToLeft,
+          curve: Curves.easeInCubic,
+          duration: const Duration(milliseconds: 1000));
     }
   }
 

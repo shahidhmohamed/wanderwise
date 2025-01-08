@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -6,6 +9,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/routes/transitions_type.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:wanderwise/app/favorite/update_fav_place.dart';
+import 'package:wanderwise/app/saved/saved_itinerary_screen.dart';
 import 'package:wanderwise/db_helper/db_helper.dart';
 import 'package:wanderwise/models/place.dart';
 
@@ -19,10 +23,94 @@ class FavoritesScreen extends StatefulWidget {
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
   final String apiKey = 'AIzaSyB5zxGGP_ydXAdIptfpjGdmcEEs_i42_KU';
+  bool haveInternetConnection = true;
 
+  @override
+  void initState() {
+    super.initState();
+    _checkInternetConnection();
+  }
+
+  final List<Map<String, dynamic>> dummyFavoritePlaces = [
+    {
+      'id': 1,
+      'businessStatus': 'OPERATIONAL',
+      'lat': 37.7749,
+      'lng': -122.4194,
+      'viewportNortheastLat': 37.8049,
+      'viewportNortheastLng': -122.4094,
+      'viewportSouthwestLat': 37.7549,
+      'viewportSouthwestLng': -122.4294,
+      'icon': 'https://example.com/icon.png',
+      'iconBackgroundColor': '#FFFFFF',
+      'iconMaskBaseUri': 'https://example.com/mask.png',
+      'name': 'Favorite Place 1',
+      'placeId': 'place1',
+      'rating': 4.5,
+      'reference': 'ref1',
+      'scope': 'GOOGLE',
+      'types': 'restaurant,bar',
+      'userRatingsTotal': 120,
+      'vicinity': '123 Main St, San Francisco, CA',
+      'photos': 'photo1,photo2',
+    },
+    {
+      'id': 2,
+      'businessStatus': 'CLOSED_TEMPORARILY',
+      'lat': 34.0522,
+      'lng': -118.2437,
+      'viewportNortheastLat': 34.0622,
+      'viewportNortheastLng': -118.2337,
+      'viewportSouthwestLat': 34.0422,
+      'viewportSouthwestLng': -118.2537,
+      'icon': 'https://example.com/icon2.png',
+      'iconBackgroundColor': '#000000',
+      'iconMaskBaseUri': 'https://example.com/mask2.png',
+      'name': 'Favorite Place 2',
+      'placeId': 'place2',
+      'rating': 3.8,
+      'reference': 'ref2',
+      'scope': 'GOOGLE',
+      'types': 'park,museum',
+      'userRatingsTotal': 75,
+      'vicinity': '456 Broadway, Los Angeles, CA',
+      'photos': 'photo3,photo4',
+    },
+  ];
+
+
+  // Future<List<Map<String, dynamic>>> _getFavNews() async {
+  //   final dbHelper = DatabaseHelper();
+  //   return await dbHelper.getFavPlace();
+  // }
   Future<List<Map<String, dynamic>>> _getFavNews() async {
     final dbHelper = DatabaseHelper();
-    return await dbHelper.getFavPlace();
+    final places = await dbHelper.getFavPlace();
+    if (places.isEmpty) {
+      return dummyFavoritePlaces; // Use dummy data if no database entries exist
+    }
+    return places;
+  }
+
+
+  Future<void> _checkInternetConnection() async {
+    bool isConnected = await hasInternetConnection();
+    setState(() {
+      haveInternetConnection = !isConnected;
+    });
+  }
+
+  Future<bool> hasInternetConnection() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult == ConnectivityResult.none) {
+      return false; // No connectivity
+    }
+    try {
+      final result = await InternetAddress.lookup('example.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (e) {
+      return false; // Unable to reach the internet
+    }
   }
 
   Future<void> _deleteFav(int id) async {
@@ -56,8 +144,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,20 +163,32 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         ),
         child: Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.only(
-                  top: 60.0, left: 110.0, right: 100.0, bottom: 10.0),
+            Padding(
+              padding: const EdgeInsets.only(
+                  top: 60.0, left: 10.0, right: 10.0, bottom: 10.0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  SizedBox(width: 10),
-                  Center(child: Text(
-                    'FAVORITE',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  // const SizedBox(width: 10),
+                  if(haveInternetConnection)
+                  IconButton(
+                    onPressed: () {
+                      Get.to(()=> SavedItineraryScreen());
+                    },
+                    icon: const Icon(Icons.arrow_back, size: 40,),
+                    color: Colors.white,
+                  ),
+                  const Center(
+                    child: Text(
+                      'FAVORITE',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),)
+                  ),
+
                 ],
               ),
             ),
@@ -116,34 +214,40 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         return GestureDetector(
                           onTap: () async {
                             final updated = await Navigator.push(
-                              context,
+                                context,
                                 MaterialPageRoute(
                                   builder: (context) => UpdateNews(
                                     id: place['id'],
                                     initialTitle: place['name'] ?? '',
-                                    initialDescription: place['description'] ?? '',
-                                    businessStatus: place['businessStatus'] ?? '',
+                                    initialDescription:
+                                        place['description'] ?? '',
+                                    businessStatus:
+                                        place['businessStatus'] ?? '',
                                     lat: place['lat'] ?? 0.0,
                                     lng: place['lng'] ?? 0.0,
-                                    viewportNortheastLat: place['viewportNortheastLat'] ?? 0.0,
-                                    viewportNortheastLng: place['viewportNortheastLng'] ?? 0.0,
-                                    viewportSouthwestLat: place['viewportSouthwestLat'] ?? 0.0,
-                                    viewportSouthwestLng: place['viewportSouthwestLng'] ?? 0.0,
+                                    viewportNortheastLat:
+                                        place['viewportNortheastLat'] ?? 0.0,
+                                    viewportNortheastLng:
+                                        place['viewportNortheastLng'] ?? 0.0,
+                                    viewportSouthwestLat:
+                                        place['viewportSouthwestLat'] ?? 0.0,
+                                    viewportSouthwestLng:
+                                        place['viewportSouthwestLng'] ?? 0.0,
                                     icon: place['icon'] ?? '',
-                                    iconBackgroundColor: place['iconBackgroundColor'] ?? '',
-                                    iconMaskBaseUri: place['iconMaskBaseUri'] ?? '',
+                                    iconBackgroundColor:
+                                        place['iconBackgroundColor'] ?? '',
+                                    iconMaskBaseUri:
+                                        place['iconMaskBaseUri'] ?? '',
                                     name: place['name'] ?? '',
                                     placeId: place['placeId'] ?? '',
                                     rating: place['rating'] ?? 0.0,
                                     reference: place['reference'] ?? '',
                                     scope: place['scope'] ?? '',
-                                    // types: place['types']?.join(',') ?? '', // Convert list to a comma-separated string
-                                    userRatingsTotal: place['userRatingsTotal'] ?? 0,
+                                    userRatingsTotal:
+                                        place['userRatingsTotal'] ?? 0,
                                     vicinity: place['vicinity'] ?? '',
-                                    // photos: place['photos']?.join(',') ?? '', // Convert list to a comma-separated string
                                   ),
-                                )
-                            );
+                                ));
                             if (updated == true) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -192,7 +296,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                           height: 150,
                                           width: 150,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
                                             return Container(
                                               height: 150,
                                               width: 150,
@@ -214,7 +319,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                           height: 150,
                                           width: 150,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
                                             return Container(
                                               height: 150,
                                               width: 150,
@@ -242,7 +348,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             place['name'] ?? 'No Title',
@@ -256,7 +362,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                           const SizedBox(height: 4),
                                           Row(
                                             mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               SizedBox(
                                                 width: 100,
@@ -265,19 +371,20 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                                   onPressed: () {},
                                                   style: ButtonStyle(
                                                     backgroundColor:
-                                                    MaterialStateProperty
-                                                        .all(Colors.black),
+                                                        MaterialStateProperty
+                                                            .all(Colors.black),
                                                     shape: MaterialStateProperty
                                                         .all(
                                                       RoundedRectangleBorder(
                                                         borderRadius:
-                                                        BorderRadius
-                                                            .circular(12),
+                                                            BorderRadius
+                                                                .circular(12),
                                                       ),
                                                     ),
                                                   ),
                                                   child: Text(
-                                                    place['businessStatus'] ?? 'No Source',
+                                                    place['businessStatus'] ??
+                                                        'No Source',
                                                     textAlign: TextAlign.center,
                                                     style: const TextStyle(
                                                       fontSize: 8,

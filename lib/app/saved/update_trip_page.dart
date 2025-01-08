@@ -13,7 +13,7 @@ class UpdateTripPage extends StatefulWidget {
 
   const UpdateTripPage(
       {super.key,
-        required this.dayID,
+      required this.dayID,
       required this.id,
       required this.budget,
       required this.activities,
@@ -35,16 +35,13 @@ class _UpdateTripPageState extends State<UpdateTripPage> {
       return;
     }
 
-    // Collect updated budget and activities
     String updatedBudget = _budgetController.text;
     List<String> updatedActivities =
         _activityControllers.map((controller) => controller.text).toList();
 
-    // Construct the updated itinerary string
     String updatedItinerary =
         'Day ${widget.dayID}: Spend up to $updatedBudget - Suggested Activities: ${updatedActivities.join(', ')}';
 
-    // Prepare updated values for the database
     final updatedValues = {
       'trip_name': widget.tripName,
       'itinerary': updatedItinerary,
@@ -53,7 +50,6 @@ class _UpdateTripPageState extends State<UpdateTripPage> {
     print("Updating trip with ID: ${widget.id}");
     print("Updated values: $updatedValues");
 
-    // Update the trip in the database
     final dbHelper = DatabaseHelper();
     int result = await dbHelper.updateTrip(widget.id, updatedValues);
     print("Update result: $result");
@@ -70,7 +66,7 @@ class _UpdateTripPageState extends State<UpdateTripPage> {
   @override
   void initState() {
     super.initState();
-    // Initialize controllers
+
     _budgetController = TextEditingController(text: widget.budget ?? '');
     _activityControllers = widget.activities
         .map((activity) => TextEditingController(text: activity ?? ''))
@@ -79,7 +75,6 @@ class _UpdateTripPageState extends State<UpdateTripPage> {
 
   @override
   void dispose() {
-    // Dispose controllers
     _budgetController.dispose();
     for (var controller in _activityControllers) {
       controller.dispose();
@@ -107,7 +102,7 @@ class _UpdateTripPageState extends State<UpdateTripPage> {
           children: [
             Center(
               child: Text(
-                widget.tripName.toUpperCase(), // Display the ID
+                widget.tripName.toUpperCase(),
                 style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -127,7 +122,7 @@ class _UpdateTripPageState extends State<UpdateTripPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Activities:', // Display the title for activities
+              'Activities:',
               style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

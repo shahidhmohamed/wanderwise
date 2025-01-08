@@ -69,7 +69,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    // Initialize with sample data
     _loadSampleData();
   }
 
@@ -96,10 +95,8 @@ class _HomePageState extends State<HomePage> {
         ),
         child: Column(
           children: [
-            // Google Map Widget
             ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(15), // Apply border radius here
+              borderRadius: BorderRadius.circular(15),
               child: SizedBox(
                 height: isPortrait ? screenHeight * 0.4 : screenHeight * 0.5,
                 child: GoogleMap(
@@ -117,11 +114,9 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             SizedBox(height: 20),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Dropdown Menu Button
                 Container(
                   width: screenWidth * 0.3,
                   height: 45,
@@ -161,8 +156,6 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
-
-                // Find Nearby Button
                 GestureDetector(
                   onTap: () async {
                     setState(() {
@@ -183,7 +176,6 @@ class _HomePageState extends State<HomePage> {
                       ),
                     );
 
-                    // Fetch nearby places
                     List<Place> places =
                         await placesController.fetchNearbyPlaces(
                             position.latitude,
@@ -222,14 +214,18 @@ class _HomePageState extends State<HomePage> {
                               color: Colors.white),
                           SizedBox(width: 5),
                           Center(
-                            child: _isLoading ? CircularProgressIndicator(color: Colors.white,) : Text(
-                              "FIND NEAR ${categoryLabels[selectedDropdownValue]?.toUpperCase() ?? selectedDropdownValue.toUpperCase()}",
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                            child: _isLoading
+                                ? CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : Text(
+                                    "FIND NEAR ${categoryLabels[selectedDropdownValue]?.toUpperCase() ?? selectedDropdownValue.toUpperCase()}",
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
                           )
                         ],
                       ),
@@ -238,10 +234,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-
             SizedBox(height: 15),
-
-            // Nearby places list
             SizedBox(
               height: 364,
               child: ListView.builder(
@@ -263,7 +256,6 @@ class _HomePageState extends State<HomePage> {
                     margin: EdgeInsets.symmetric(horizontal: 10.0),
                     child: GestureDetector(
                       onTap: () {
-                        // Navigate to the ViewPlacePage when the stack is tapped
                         Get.to(
                           () => ViewPlacePage(article: place, dayInfo: dayInfo),
                           transition: Transition.leftToRight,
@@ -273,7 +265,6 @@ class _HomePageState extends State<HomePage> {
                       },
                       child: Stack(
                         children: [
-                          // Background Image
                           Padding(
                             padding: const EdgeInsets.all(12.0),
                             child: ClipRRect(
@@ -294,8 +285,6 @@ class _HomePageState extends State<HomePage> {
                                     ),
                             ),
                           ),
-
-                          // Download button at the top right
                           Positioned(
                             top: 22,
                             right: 22,
@@ -337,28 +326,26 @@ class _HomePageState extends State<HomePage> {
                                           .toList(),
                                     );
 
-                                    // Show success message
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: const Text(
-                                            'Favorite place added successfully!',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          backgroundColor: Colors.green,
-                                          duration: const Duration(seconds: 3),
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                                        )
-                                    );
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(
+                                      content: const Text(
+                                        'Favorite place added successfully!',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      backgroundColor: Colors.green,
+                                      duration: const Duration(seconds: 3),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16.0, vertical: 10.0),
+                                    ));
                                   } catch (e) {
-                                    // Optionally handle errors
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
@@ -371,15 +358,12 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
-
-                          // Details at the bottom
                           Positioned(
                             bottom: 138,
                             left: 18,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Name of the place
                                 Text(
                                   place.name.toUpperCase(),
                                   maxLines: 2,
@@ -391,8 +375,6 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ),
                                 const SizedBox(height: 5),
-
-                                // Rating and review count
                                 Row(
                                   children: [
                                     DotBar(rating: place.rating),
@@ -411,8 +393,6 @@ class _HomePageState extends State<HomePage> {
                               ],
                             ),
                           ),
-
-                          // Share button at the bottom right
                           Positioned(
                             bottom: 118,
                             right: 18,
@@ -421,13 +401,17 @@ class _HomePageState extends State<HomePage> {
                                   color: Colors.white, size: 40.0),
                               onPressed: () {
                                 final placeName = place.name ?? 'Unknown Place';
-                                final userRatings = place.userRatingsTotal?.toString() ?? 'No ratings';
-                                final placeUrl = place.vicinity ?? 'No URL available';
+                                final userRatings =
+                                    place.userRatingsTotal?.toString() ??
+                                        'No ratings';
+                                final placeUrl =
+                                    place.vicinity ?? 'No URL available';
 
                                 if (placeUrl == 'No URL available') {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('No URL available to share!'),
+                                      content:
+                                          Text('No URL available to share!'),
                                       duration: Duration(seconds: 2),
                                       backgroundColor: Colors.red,
                                     ),
@@ -440,7 +424,6 @@ class _HomePageState extends State<HomePage> {
                                   subject: 'Check out this place!',
                                 );
                               },
-
                             ),
                           ),
                         ],
@@ -456,7 +439,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Handle place selection to show directions
   void _onPlaceSelected(Place place) async {
     final directions = await placesController.fetchDirections(
         myCurrentLocation.latitude,
@@ -469,7 +451,6 @@ class _HomePageState extends State<HomePage> {
         "My Current Location ${myCurrentLocation.latitude} ${myCurrentLocation.longitude}");
   }
 
-  // Add polyline on map for the directions
   void _addPolyline(List<LatLng> points) {
     polylines.clear();
     polylines.add(Polyline(
@@ -481,7 +462,6 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  // Get current location of the user
   Future<Position> currentPosition() async {
     bool serviceEnabled;
     LocationPermission permission;

@@ -52,12 +52,21 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 Text(
                   "LOG IN",
-                  style: TextStyle(fontSize: 47, fontWeight: FontWeight.w900,color: Colors.white),
+                  style: TextStyle(
+                      fontSize: 47,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Don't have an account?",style: TextStyle(color: Colors.white,fontSize: 20,fontWeight: FontWeight.w700),),
+                    Text(
+                      "Don't have an account?",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700),
+                    ),
                     SizedBox(
                       width: 5,
                     ),
@@ -66,7 +75,7 @@ class _LoginPageState extends State<LoginPage> {
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(builder: (context) => SignUpPage()),
-                              (route) => false,
+                          (route) => false,
                         );
                       },
                       child: Text(
@@ -110,22 +119,26 @@ class _LoginPageState extends State<LoginPage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Center(
-                      child: _isSigning ? CircularProgressIndicator(
-                        color: Colors.white,) : Text(
-                        "Login",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: _isSigning
+                          ? CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : Text(
+                              "Login",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ),
-                SizedBox(height: 10,),
+                SizedBox(
+                  height: 10,
+                ),
                 GestureDetector(
                   onTap: () {
                     _signInWithGoogle();
-
                   },
                   child: Container(
                     width: double.infinity,
@@ -138,8 +151,13 @@ class _LoginPageState extends State<LoginPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(FontAwesomeIcons.google, color: Colors.white,),
-                          SizedBox(width: 5,),
+                          Icon(
+                            FontAwesomeIcons.google,
+                            color: Colors.white,
+                          ),
+                          SizedBox(
+                            width: 5,
+                          ),
                           Text(
                             "Sign in with Google",
                             style: TextStyle(
@@ -152,13 +170,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-
-
                 SizedBox(
                   height: 20,
                 ),
-
-
               ],
             ),
           ),
@@ -192,17 +206,16 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  _signInWithGoogle()async{
-
+  _signInWithGoogle() async {
     final GoogleSignIn _googleSignIn = GoogleSignIn();
 
     try {
+      final GoogleSignInAccount? googleSignInAccount =
+          await _googleSignIn.signIn();
 
-      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
-
-      if(googleSignInAccount != null ){
-        final GoogleSignInAuthentication googleSignInAuthentication = await
-        googleSignInAccount.authentication;
+      if (googleSignInAccount != null) {
+        final GoogleSignInAuthentication googleSignInAuthentication =
+            await googleSignInAccount.authentication;
 
         final AuthCredential credential = GoogleAuthProvider.credential(
           idToken: googleSignInAuthentication.idToken,
@@ -215,8 +228,7 @@ class _LoginPageState extends State<LoginPage> {
             curve: Curves.easeInCubic,
             duration: const Duration(milliseconds: 1000));
       }
-
-    }catch(e) {
+    } catch (e) {
       showToast(message: "some error occured $e");
     }
   }

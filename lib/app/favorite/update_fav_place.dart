@@ -68,13 +68,18 @@ class _UpdateNewsState extends State<UpdateNews> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.initialTitle);
-    _descriptionController = TextEditingController(text: widget.initialDescription);
+    _descriptionController =
+        TextEditingController(text: widget.initialDescription);
     _latController = TextEditingController(text: widget.lat.toString());
     _lngController = TextEditingController(text: widget.lng.toString());
-    _viewportNortheastLatController = TextEditingController(text: widget.viewportNortheastLat.toString());
-    _viewportNortheastLngController = TextEditingController(text: widget.viewportNortheastLng.toString());
-    _viewportSouthwestLatController = TextEditingController(text: widget.viewportSouthwestLat.toString());
-    _viewportSouthwestLngController = TextEditingController(text: widget.viewportSouthwestLng.toString());
+    _viewportNortheastLatController =
+        TextEditingController(text: widget.viewportNortheastLat.toString());
+    _viewportNortheastLngController =
+        TextEditingController(text: widget.viewportNortheastLng.toString());
+    _viewportSouthwestLatController =
+        TextEditingController(text: widget.viewportSouthwestLat.toString());
+    _viewportSouthwestLngController =
+        TextEditingController(text: widget.viewportSouthwestLng.toString());
     _ratingController = TextEditingController(text: widget.rating.toString());
     _nameController = TextEditingController(text: widget.name);
   }
@@ -95,7 +100,8 @@ class _UpdateNewsState extends State<UpdateNews> {
   Future<void> _saveChanges() async {
     if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Title, description, and name cannot be empty')),
+        const SnackBar(
+            content: Text('Title, description, and name cannot be empty')),
       );
       return;
     }
@@ -112,11 +118,13 @@ class _UpdateNewsState extends State<UpdateNews> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Center(child: Text(
-          'Edit Article',
-          style: TextStyle(
-              color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
-        ),),
+        title: Center(
+          child: Text(
+            'Edit Place',
+            style: TextStyle(
+                color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -357,10 +365,12 @@ class _UpdateNewsState extends State<UpdateNews> {
                 ),
               ),
               const SizedBox(height: 16),
-              Center(child: ElevatedButton(
-                onPressed: _saveChanges,
-                child: const Text('Save Changes'),
-              ),)
+              Center(
+                child: ElevatedButton(
+                  onPressed: _saveChanges,
+                  child: const Text('Save Changes'),
+                ),
+              )
             ],
           ),
         ),
